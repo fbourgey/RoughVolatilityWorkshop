@@ -1,3 +1,3 @@
 # RoughVolatilityWorkshop
 
-Python translation of the [QuantMinds Rough Volatility Workshop lectures](https://github.com/jgatheral/RoughVolatilityWorkshop).
+Python translation from R of the repository [QuantMinds Rough Volatility Workshop Lectures](https://github.com/jgatheral/RoughVolatilityWorkshop).
