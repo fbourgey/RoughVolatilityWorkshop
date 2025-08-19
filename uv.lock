@@ -1235,6 +1235,15 @@ wheels = [
 ]
 
 [[package]]
+name = "numfracpy"
+version = "0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/5b/9912ab82023312b6c786745746d886156c66699c488356bdcbfa5c88848c/numfracpy-0.4.tar.gz", hash = "sha256:9bef8e6f45bb0be7fce99c947480cc6e59f7a334c3fcdb76445ab0a4f40663fa", size = 6386, upload-time = "2023-09-06T15:52:19.695Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/a4/505d689003973c5b2b36c33d21aeb0355570aeaaef4cd425a71b59bd0460/numfracpy-0.4-py3-none-any.whl", hash = "sha256:81a7f57ec5ce77e93d10d379b5e3b4d376b6e63141998658a4608abb722881fc", size = 6997, upload-time = "2023-09-06T15:52:17.873Z" },
+]
+
+[[package]]
 name = "numpy"
 version = "2.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1802,6 +1811,7 @@ dependencies = [
     { name = "ipykernel" },
     { name = "jupyter" },
     { name = "matplotlib" },
+    { name = "numfracpy" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "scipy" },
@@ -1814,6 +1824,7 @@ requires-dist = [
     { name = "ipykernel", specifier = ">=6.30.1" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "matplotlib", specifier = ">=3.10.5" },
+    { name = "numfracpy", specifier = ">=0.4" },
     { name = "numpy", specifier = ">=2.3.2" },
     { name = "pandas", specifier = ">=2.3.1" },
     { name = "scipy", specifier = ">=1.16.1" },
