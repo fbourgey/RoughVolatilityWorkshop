@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.integrate import quad
+from scipy.integrate import quad, quad_vec
 from scipy.interpolate import PchipInterpolator
 from scipy.stats import norm
 import pandas as pd
@@ -842,3 +842,51 @@ def linear_regression(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
     beta = cov_x_y / var_x
     alpha = y.mean() - beta * x.mean()
     return alpha, beta
+
+
+def lewis_formula_otm_price(phi, k, tau):
+    """
+    Compute the OTM (Out-of-The-Money) option price using the Lewis formula.
+
+    The Lewis formula is used to price European options by applying Fourier transform
+    methods. It calculates the price of OTM options given the characteristic function
+    of the log price.
+
+    Parameters
+    ----------
+    phi : callable
+        The characteristic function of the log price process.
+        Should take two arguments: complex number u and time to maturity tau.
+    k : float or array_like
+        Log strike price(s). k = log(K/S) where K is strike and S is spot price.
+    tau : float or array_like
+        Time(s) to maturity in years.
+
+    Returns
+    -------
+    ndarray
+        OTM option prices. For k < 0, returns put prices; for k >= 0, returns
+        call prices.
+
+    Notes
+    -----
+    The formula uses the following representation:
+    For k >= 0 (calls): C(k,T) = 1/π ∫[0,∞] Re[e^(-iuk)φ(u-i/2,τ)/(u^2+1/4)]du
+    For k < 0 (puts): P(k,T) = e^k - 1/π ∫[0,∞] Re[e^(-iuk)φ(u-i/2,τ)/(u^2+1/4)]du
+
+    References
+    ----------
+    Lewis, A. L. (2000). Option Valuation under Stochastic Volatility.
+    """
+    k = np.atleast_1d(np.asarray(k))
+    tau = np.atleast_1d(np.asarray(tau))
+
+    def integrand(u):
+        return np.real(np.exp(-1j * u * k) * phi(u - 1j / 2, tau) / (u**2 + 1 / 4))
+
+    k_minus = k * (k < 0)
+
+    integral, _ = quad_vec(integrand, 0, np.inf, epsrel=1e-10, limit=1000)
+    result = np.exp(k_minus) - np.exp(k / 2) / np.pi * integral
+
+    return result
