@@ -695,6 +695,8 @@ def black_impvol(
     # raise ValueError("Implied volatility did not converge.")
     print("Implied volatility did not converge for all log(K/F) values.")
 
+    # Set mid to NaN where the tolerance is not met
+    mid = np.where(np.abs(diff) < TOL, mid, np.nan)
     return mid
 
 

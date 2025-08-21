@@ -3078,7 +3078,7 @@ def impvol_rheston_rational(k, tau, params, xi, n_pade: int, n_quad: int = 40):
     Returns
     -------
     float
-        Black-Scholes implied volatility
+        Black implied volatility
     """
     otm_price = lewis_formula_otm_price(
         lambda u, tau: phi_rheston_rational(
@@ -3090,3 +3090,122 @@ def impvol_rheston_rational(k, tau, params, xi, n_pade: int, n_quad: int = 40):
     opttype = 2 * (k > 0) - 1  # otm options
     impvol = black_impvol(K=np.exp(k), T=tau, F=1, value=otm_price, opttype=opttype)
     return impvol
+
+
+def gamma_kernel(x: np.ndarray, params: dict) -> np.ndarray:
+    """
+    Compute the gamma kernel at x.
+
+    The gamma kernel is defined as
+        k(x) = (nu/Gamma(alpha)) * x^(alpha - 1) * exp(-lbd * x)
+    with alpha = H + 1/2
+    """
+    nu = params["nu"]
+    H = params["H"]
+    alpha = H + 1 / 2
+    lbd = params["lbd"]
+    return (nu / sp.gamma(alpha)) * x ** (alpha - 1) * np.exp(-lbd * x)
+
+
+def integral_gamma_kernel_K0(x, params, quad_scipy=False):
+    r"""
+    Compute the integral K0(x) = \int_0^x k(s) ds where k(s) is the gamma kernel
+    function at s.
+    """
+    if quad_scipy:
+        return integrate.quad(lambda s: gamma_kernel(s, params), 0.0, x)[0]
+    else:
+        nu = params["nu"]
+        H = params["H"]
+        alpha = H + 1 / 2
+        lbd = params["lbd"]
+        x = np.atleast_1d(np.asarray(x))
+        mask = x > 0
+        res = np.empty_like(x)
+        res[mask] = sp.gamma(alpha) * sp.gammainc(alpha, lbd * x[mask]) / lbd ** (alpha)
+        res[~mask] = x[~mask] ** alpha / alpha
+        res *= nu / sp.gamma(alpha)
+        return res
+
+
+def integral_gamma_kernel_K00(x, params, quad_scipy=False):
+    r"""
+    Compute the integral K00(x) = \int_0^x k(s)^2 ds where k(s) is the gamma kernel
+    function at s.
+    Note: in SciPy, gammainc is the regularized lower incomplete gamma function.
+    """
+    if quad_scipy:
+        return integrate.quad(lambda s: gamma_kernel(s, params) ** 2, 0.0, x)[0]
+    else:
+        nu = params["nu"]
+        H = params["H"]
+        alpha = H + 1 / 2
+        lbd = params["lbd"]
+        x = np.atleast_1d(np.asarray(x))
+        mask = x > 0
+        res = np.empty_like(x)
+        res[mask] = (
+            sp.gamma(2.0 * H)
+            * sp.gammainc(2.0 * H, 2 * lbd * x[mask])
+            / (2.0 * lbd) ** (2.0 * H)
+        )
+        res[~mask] = x[~mask] ** (2.0 * H) / (2.0 * H)
+        res *= (nu / sp.gamma(alpha)) ** 2
+        return res
+
+
+def integral_gamma_kernel_Ki(x, i, params, quad_scipy=True):
+    r"""
+    Compute the integral Kij(x) = \int_0^x k(s + i * x) * k(s + j * x) ds where k is the
+    gamma kernel.
+    """
+    if quad_scipy:
+        return integrate.quad(lambda s: gamma_kernel(s + i * x, params), 0.0, x)[0]
+
+
+def integral_gamma_kernel_Kij(x, i, j, params, quad_scipy=True):
+    r"""
+    Compute the integral Kij(x) = \int_0^x k(s + i * x) * k(s + j * x) ds where k is the
+    gamma kernel.
+    """
+    if quad_scipy:
+        return integrate.quad(
+            lambda s: gamma_kernel(s + i * x, params) * gamma_kernel(s + j * x, params),
+            0.0,
+            x,
+        )[0]
+
+
+def rho_u_chi(x, params):
+    x = np.atleast_1d(np.asarray(x))
+    if np.any(x <= 0):
+        raise ValueError("Input x must be positive for rho_u_chi.")
+    K0 = integral_gamma_kernel_K0(x, params)
+    K00 = integral_gamma_kernel_K00(x, params)
+    if np.any(K00 == 0):
+        raise ValueError("K00(x) cannot be zero for any x in the input.")
+    return K0 / (x * K00) ** 0.5
+
+
+def rho_u_xi(x, params):
+    x = np.atleast_1d(np.asarray(x))
+    if np.any(x <= 0):
+        raise ValueError("Input x must be positive for rho_u_chi.")
+    K01 = integral_gamma_kernel_Kij(x, 0, 1, params)
+    K00 = integral_gamma_kernel_K00(x, params)
+    K11 = integral_gamma_kernel_Kij(x, 1, 1, params)
+    if np.any(K00 == 0) or np.any(K11 == 0):
+        raise ValueError("K00(x) or K11(x) cannot be zero for any x in the input.")
+    return K01 / (K00 * K11) ** 0.5
+
+
+def rho_xi_chi(x, params):
+    x = np.atleast_1d(np.asarray(x))
+    if np.any(x <= 0):
+        raise ValueError("Input x must be positive for rho_u_chi.")
+    K1 = integral_gamma_kernel_Ki(x, 1, params)
+    K11 = integral_gamma_kernel_Kij(x, 1, 1, params)
+
+    if np.any(K11 == 0):
+        raise ValueError("K11(x) cannot be zero for any x in the input.")
+    return K1 / (x * K11) ** 0.5
