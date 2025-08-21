@@ -59,7 +59,7 @@ def psi_plus(psi, ev, u):
     gamma = ev / 2 * (1 + psi)
 
     # Compute exponential variates using inverse transform
-    vf = -(u < p) * gamma * np.log(u / p)
+    vf = -1.0 * (u < p) * gamma * np.log(u / p)
     return vf
 
 

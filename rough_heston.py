@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.special as sp
 from scipy import integrate
+from heston import psi_minus, psi_plus
 from utils import black_impvol, gauss_legendre, lewis_formula_otm_price
 
 
@@ -3209,3 +3210,64 @@ def rho_xi_chi(x, params):
     if np.any(K11 == 0):
         raise ValueError("K11(x) cannot be zero for any x in the input.")
     return K1 / (x * K11) ** 0.5
+
+
+def simulate_rsqe(T, params, xi, n_mc, n_steps):
+    """
+    Simulate the Riemann-sum Quadratic Exponential scheme (RSQE).
+    """
+    nu = params["nu"]
+    H = params["H"]
+    rho = params["rho"]
+    rho2m1 = np.sqrt(1 - rho**2)
+    eps_0 = 1e-10
+
+    # Generate random variables
+    W = np.random.normal(size=(n_steps, n_mc))
+    Wperp = np.random.normal(size=(n_steps, n_mc))
+    U = np.random.uniform(size=(n_steps, n_mc))
+
+    # Time n_steps
+    dt = T / n_steps
+    tj = np.arange(1, n_steps + 1) * dt
+    xi_tj = np.array([xi(t) for t in tj])
+
+    # Initialize arrays
+    K00_delta = float(integral_gamma_kernel_K00(dt, params))
+    K00_j = np.zeros(n_steps + 1)
+    K00_j[1:] = integral_gamma_kernel_K00(tj, params)
+    bstar = np.sqrt(np.diff(K00_j) / dt)
+
+    u = np.zeros((n_steps, n_mc))
+    v = np.full(n_mc, xi(0))
+    xihat = np.full(n_mc, xi_tj[0])
+    x = np.zeros(n_mc)
+    y = np.zeros(n_mc)
+    w = np.zeros(n_mc)
+
+    for j in range(n_steps):
+        varv = nu**2 * (xihat + 2 * H * v) / (1 + 2 * H) * K00_delta
+        psi = varv / xihat**2
+        if np.any(psi < 0):
+            raise ValueError("psi must be non-negative for all j and n_mc.")
+        vf = np.where(
+            psi < 1.5, psi_minus(psi, xihat, W[j]), psi_plus(psi, xihat, U[j])
+        )
+
+        u[j] = vf - xihat
+        dw = (v + vf) / 2 * dt
+        w += dw
+        dy = u[j] / (nu * bstar[0])
+        y += dy
+        x += -dw / 2 + np.sqrt(dw) * rho2m1 * Wperp[j] + rho * dy
+
+        if j < n_steps - 1:
+            btilde = bstar[1 : j + 2][::-1]
+            xihat = (
+                xi_tj[j + 1] + np.tensordot(btilde, u[: j + 1, :], axes=1) / bstar[0]
+            )
+
+        xihat = np.maximum(xihat, eps_0)
+        v = vf
+
+    return {"x": x, "v": v, "w": w}
