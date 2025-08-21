@@ -3216,7 +3216,6 @@ def simulate_rsqe(T, params, xi, n_mc, n_steps):
     """
     Simulate the Riemann-sum Quadratic Exponential scheme (RSQE).
     """
-    nu = params["nu"]
     H = params["H"]
     rho = params["rho"]
     rho2m1 = np.sqrt(1 - rho**2)
@@ -3246,7 +3245,7 @@ def simulate_rsqe(T, params, xi, n_mc, n_steps):
     w = np.zeros(n_mc)
 
     for j in range(n_steps):
-        varv = nu**2 * (xihat + 2 * H * v) / (1 + 2 * H) * K00_delta
+        varv = (xihat + 2 * H * v) / (1 + 2 * H) * K00_delta
         psi = varv / xihat**2
         if np.any(psi < 0):
             raise ValueError("psi must be non-negative for all j and n_mc.")
@@ -3257,7 +3256,7 @@ def simulate_rsqe(T, params, xi, n_mc, n_steps):
         u[j] = vf - xihat
         dw = (v + vf) / 2 * dt
         w += dw
-        dy = u[j] / (nu * bstar[0])
+        dy = u[j] / bstar[0]
         y += dy
         x += -dw / 2 + np.sqrt(dw) * rho2m1 * Wperp[j] + rho * dy
 
@@ -3268,6 +3267,78 @@ def simulate_rsqe(T, params, xi, n_mc, n_steps):
             )
 
         xihat = np.maximum(xihat, eps_0)
+        v = vf
+
+    return {"x": x, "v": v, "w": w}
+
+
+def simulate_hqe(T, params, xi, n_mc, n_steps):
+    """
+    Simulate the Hybrid Quadratic Exponential scheme (HQE).
+    """
+    H = params["H"]
+    rho = params["rho"]
+    rho2m1 = np.sqrt(1 - rho * rho)
+    eps_0 = 1e-10
+
+    # Generate random matrices
+    W = np.random.normal(size=(n_steps, n_mc))
+    Wperp = np.random.normal(size=(n_steps, n_mc))
+    Z = np.random.normal(size=(n_steps, n_mc))
+    U = np.random.uniform(size=(n_steps, n_mc))
+    Uperp = np.random.uniform(size=(n_steps, n_mc))
+
+    dt = T / n_steps
+    tj = np.arange(1, n_steps + 1) * dt
+    xij = xi(tj)
+
+    K0_delta = integral_gamma_kernel_K0(dt, params)
+    K_jj = np.array(
+        [integral_gamma_kernel_Kij(dt, i, i, params) for i in range(n_steps)]
+    )
+    K00_delta = K_jj[0]
+
+    bstar = np.sqrt(K_jj / dt)
+    rho_vchi = K0_delta / np.sqrt(K00_delta * dt)
+    beta_vchi = K0_delta / dt
+
+    u = np.zeros((n_steps, n_mc))
+    chi = np.zeros((n_steps, n_mc))
+    v = np.full(n_mc, xi(0))
+    xihat = np.full(n_mc, xij[0])
+    x = np.zeros(n_mc)
+    y = np.zeros(n_mc)
+    w = np.zeros(n_mc)
+
+    for j in range(n_steps):
+        xibar = (xihat + 2 * H * v) / (1 + 2 * H)
+        psi_chi = 4 * K00_delta * rho_vchi**2 * xibar / xihat**2
+        psi_eps = 4 * K00_delta * (1 - rho_vchi**2) * xibar / xihat**2
+
+        z_chi = np.where(
+            psi_chi < 3 / 2,
+            psi_minus(psi_chi, xihat / 2, W[j]),
+            psi_plus(psi_chi, xihat / 2, U[j]),
+        )
+        z_eps = np.where(
+            psi_eps < 3 / 2,
+            psi_minus(psi_eps, xihat / 2, Wperp[j]),
+            psi_plus(psi_eps, xihat / 2, Uperp[j]),
+        )
+
+        chi[j] = (z_chi - xihat / 2) / beta_vchi
+        eps = z_eps - xihat / 2
+        u[j] = beta_vchi * chi[j] + eps
+        vf = xihat + u[j]
+        vf = np.maximum(vf, eps_0)
+        dw = (v + vf) / 2 * dt
+        w += dw
+        y += chi[j]
+        x = x - dw / 2 + np.sqrt(dw) * rho2m1 * Z[j] + rho * chi[j]
+
+        if j < n_steps - 1:
+            btilde = bstar[1 : j + 2][::-1]
+            xihat = xij[j + 1] + np.dot(btilde, chi[: j + 1])
         v = vf
 
     return {"x": x, "v": v, "w": w}
