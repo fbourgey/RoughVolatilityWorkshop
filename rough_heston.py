@@ -345,7 +345,7 @@ def rho_xi_chi(x, params):
     return K1 / (x * K11) ** 0.5
 
 
-def simulate_rsqe(T, params, xi, n_mc: int, n_steps: int):
+def simulate_rsqe(T: float, params: dict, xi, n_mc: int, n_steps: int, seed=None):
     """
     Simulate paths using the Riemann-sum Quadratic Exponential (RSQE) scheme.
 
@@ -367,6 +367,14 @@ def simulate_rsqe(T, params, xi, n_mc: int, n_steps: int):
     dict
         Simulated paths: keys 'x', 'v', 'w'.
     """
+    if not n_steps > 0:
+        raise ValueError("Number of steps must be positive.")
+    if not n_mc > 0:
+        raise ValueError("Number of Monte Carlo paths must be positive.")
+
+    if seed is not None:
+        np.random.seed(seed)
+
     H = params["H"]
     rho = params["rho"]
     rho2m1 = np.sqrt(1 - rho**2)
@@ -423,7 +431,7 @@ def simulate_rsqe(T, params, xi, n_mc: int, n_steps: int):
     return {"x": x, "v": v, "w": w}
 
 
-def simulate_hqe(T, params, xi, n_mc, n_steps):
+def simulate_hqe(T: float, params: dict, xi, n_mc: int, n_steps: int, seed=None):
     """
     Simulate paths using the Hybrid Quadratic Exponential (HQE) scheme.
 
@@ -445,6 +453,14 @@ def simulate_hqe(T, params, xi, n_mc, n_steps):
     dict
         Simulated paths: keys 'x', 'v', 'w'.
     """
+    if not n_steps > 0:
+        raise ValueError("Number of steps must be positive.")
+    if not n_mc > 0:
+        raise ValueError("Number of Monte Carlo paths must be positive.")
+
+    if seed is not None:
+        np.random.seed(seed)
+
     H = params["H"]
     rho = params["rho"]
     rho2m1 = np.sqrt(1 - rho * rho)
