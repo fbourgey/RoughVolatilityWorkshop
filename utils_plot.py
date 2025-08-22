@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 
+from utils import black_otm_impvol_mc
+
 
 def plot_ivols_mc(ivol_data, slices=None, mc_matrix=None, plot=True, colnum=None):
     """

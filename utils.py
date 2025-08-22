@@ -504,3 +504,74 @@ def lewis_formula_otm_price(phi, k, tau):
     result = np.exp(k_minus) - np.exp(k / 2) / np.pi * integral
 
     return result
+
+
+def vix2_from_data(ivol_data):
+    """
+    Compute VIX squared values for each expiry from option implied volatility data.
+
+    Parameters
+    ----------
+    ivol_data : pd.DataFrame
+        DataFrame containing columns 'Texp', 'Bid', 'Ask', 'Fwd', and 'Strike'.
+
+    Returns
+    -------
+    vix_expiries : np.ndarray
+        Array of unique expiry times.
+    vix2_values : np.ndarray
+        Array of VIX squared values for each expiry.
+    """
+    # Get unique expiries
+    vix_expiries = ivol_data["Texp"].unique()
+    vix2_values = np.zeros_like(vix_expiries, dtype=float)
+
+    for i, t in enumerate(vix_expiries):
+        # Filter data for this expiry
+        mask = ivol_data["Texp"] == t
+        bid_vol = ivol_data.loc[mask, "Bid"].astype(float)
+        ask_vol = ivol_data.loc[mask, "Ask"].astype(float)
+        mid_vol = (bid_vol + ask_vol) / 2
+        f = ivol_data.loc[mask, "Fwd"].iloc[0]
+        k = np.log(ivol_data.loc[mask, "Strike"] / f)  # Log-strike
+
+        # Handle missing values
+        include = ~bid_vol.isna()
+        k_min = k[include].min()
+        k_max = k[include].max()
+
+        # Interpolation inputs
+        k_in = k[~mid_vol.isna()]
+        vol_in = mid_vol[~mid_vol.isna()]
+
+        def vol_interp(k_out):
+            if k_out < k_min:
+                return mid_vol[k == k_min].iloc[0]
+            elif k_out > k_max:
+                return mid_vol[k == k_max].iloc[0]
+            else:
+                return np.interp(k_out, k_in, vol_in)
+
+        # Vectorize the interpolation function
+        vix_vol = np.vectorize(vol_interp)
+
+        # Define integration functions
+        def c_tilde(y):
+            return np.exp(y) * black_price(
+                F=1, K=np.exp(y), T=t, vol=vix_vol(y), opttype=1
+            )
+
+        def p_tilde(y):
+            return np.exp(y) * black_price(
+                F=1, K=np.exp(y), T=t, vol=vix_vol(y), opttype=-1
+            )
+
+        # Perform numerical integration
+        call_integral = quad(c_tilde, 0, 10)[0]
+        put_integral = quad(p_tilde, -10, 0)[0]
+
+        vix2_values[i] = f**2 * (1 + 2 * (call_integral + put_integral))
+
+    vix2_values /= 10**4  # fwd price is in percentage.
+
+    return vix_expiries, vix2_values
