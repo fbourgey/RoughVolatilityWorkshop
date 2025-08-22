@@ -3017,6 +3017,11 @@ def _deriv_h_pade(tau, a, params, n_pade: int):
 
 
 def _g(a, t, params, n_pade):
+    r"""
+    Compute the auxiliary function g(a, t) for the rough Heston model.
+    The function is needed to compute the log characteristic function:
+        log E[e^{i * a * log(S_t/S_0)}] = \int_t^T \xi_t(s) * g(T-s; a) ds.
+    """
     lbd = params["lbd"]
     return lbd * _h_pade(t, a, params, n_pade) + _deriv_h_pade(t, a, params, n_pade)
 

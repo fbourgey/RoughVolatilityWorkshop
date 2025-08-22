@@ -811,41 +811,6 @@ def set_plot_style() -> None:
     )
 
 
-def linear_regression(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
-    """
-    Perform simple linear regression (least squares) to fit y = alpha + beta * x.
-
-    Parameters
-    ----------
-    x : np.ndarray
-        One-dimensional array of independent variable values.
-    y : np.ndarray
-        One-dimensional array of dependent variable values.
-
-    Returns
-    -------
-    tuple[float, float]
-        A tuple (alpha, beta) where:
-        - alpha is the intercept of the regression line.
-        - beta is the slope of the regression line.
-
-    Raises
-    ------
-    ValueError
-        If x or y are not one-dimensional arrays.
-    """
-    x = np.atleast_1d(np.asarray(x))
-    y = np.atleast_1d(np.asarray(y))
-    if x.ndim != 1 or y.ndim != 1:
-        raise ValueError("x and y must be one-dimensional arrays.")
-    cov = np.cov(x, y)
-    cov_x_y = cov[0, 1]
-    var_x = cov[0, 0]
-    beta = cov_x_y / var_x
-    alpha = y.mean() - beta * x.mean()
-    return alpha, beta
-
-
 def lewis_formula_otm_price(phi, k, tau):
     """
     Compute the OTM (Out-of-The-Money) option price using the Lewis formula.
