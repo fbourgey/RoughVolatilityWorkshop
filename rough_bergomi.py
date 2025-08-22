@@ -1,3 +1,10 @@
+"""
+Rough Bergomi model implementation.
+
+Compact implementation providing path simulation, VIX pricing and approximations,
+and local/implied volatility estimators for the rough Bergomi model.
+"""
+
 import numpy as np
 from scipy import optimize, special, stats, integrate
 from tqdm import tqdm

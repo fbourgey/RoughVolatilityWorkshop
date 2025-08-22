@@ -1,9 +1,39 @@
+"""
+Forward Variance Curve Computation Module.
+
+This module provides functions to compute and optimize forward variance curves
+from a set of input variance values and expiry times. It includes both piecewise
+constant and smooth (cubic spline) implementations.
+
+Functions:
+    obj_w: Creates objective function for variance curve optimization
+    xi_curve: Computes piecewise constant forward variance curve
+    xi_curve_smooth: Computes smooth forward variance curve using cubic splines
+"""
+
 import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import inv
 
 
-def obj_w(expiries, w_in):
+def _objective_w(expiries, w_in):
+    """
+    Create an objective function for optimizing forward variance curve.
+
+    Parameters
+    ----------
+    expiries : ndarray
+        Array of expiry times.
+    w_in : ndarray
+        Array of input variance values.
+
+    Returns
+    -------
+    callable
+        Objective function that takes error vector as input and returns
+        optimization score.
+    """
+
     def objective(err_vec):
         w_in_1 = w_in + 2 * np.sqrt(w_in) * err_vec * np.sqrt(expiries)
         xi_vec = np.concatenate(
@@ -21,10 +51,35 @@ def obj_w(expiries, w_in):
 
 
 def xi_curve(expiries, w_in, eps=0):
+    """
+    Compute piecewise constant forward variance curve.
+
+    Parameters
+    ----------
+    expiries : ndarray
+        Array of expiry times.
+    w_in : ndarray
+        Array of input variance values.
+    eps : float, optional
+        Error bound for optimization, by default 0.
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+        - xi_vec : ndarray
+            Forward variance values at expiry points
+        - xi_curve : callable
+            Vectorized function for forward variance curve
+        - fit_errs : ndarray
+            Fitting errors at expiry points
+        - w_out : ndarray
+            Optimized variance values
+    """
     n = len(w_in)
     if eps > 0:
         res_optim = minimize(
-            obj_w(expiries, w_in),
+            _objective_w(expiries, w_in),
             np.zeros(n),
             method="L-BFGS-B",
             bounds=[(-eps, eps)] * n,
@@ -55,6 +110,32 @@ def xi_curve(expiries, w_in, eps=0):
 
 
 def xi_curve_smooth(expiries, w_in, xi=True, eps=0.0):
+    """
+    Compute smooth forward variance curve using cubic splines.
+
+    Parameters
+    ----------
+    expiries : ndarray
+        Array of expiry times.
+    w_in : ndarray
+        Array of input variance values.
+    xi : bool, optional
+        If True returns forward variance, if False returns variance, by default True.
+    eps : float, optional
+        Error bound for optimization, by default 0.0.
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+        - xi_curve : callable
+            Vectorized function for forward variance curve
+        - fit_errs : ndarray
+            Fitting errors at expiry points
+        - w_out : ndarray
+            Optimized variance values
+    """
+
     def phi(tau):
         def func(x):
             min_val = np.minimum(x, tau)

@@ -1,3 +1,12 @@
+"""
+Heston stochastic volatility model implementation.
+
+Provides functions for simulating variance processes, computing characteristic
+functions and implied volatilities using Andersen's QE scheme.
+
+Reference: Heston (1993), Andersen (2008)
+"""
+
 import numpy as np
 
 from utils import black_impvol, lewis_formula_otm_price
@@ -65,7 +74,23 @@ def psi_plus(psi, ev, u):
 
 def psi(v, params, dt):
     """
-    Compute algorithm psi for QE scheme (Andersen's Quadratic Exponential scheme).
+    Compute psi ratio for QE variance simulation scheme.
+
+    Calculates ratio to determine which QE scheme branch to use for variance paths.
+
+    Parameters
+    ----------
+    v : float
+        Current variance value
+    params : dict
+        Model parameters (nu, lbd, vbar)
+    dt : float
+        Time step size
+
+    Returns
+    -------
+    float
+        Ratio of variance to squared mean
     """
     nu = params["nu"]
     lbd = params["lbd"]
@@ -81,8 +106,8 @@ def psi(v, params, dt):
 
 def phi_heston(u, tau, params):
     """
-    Characteristic function of the Heston model E[exp(i * u * X_tau)]
-    where X_tau = log(S_tau/S_0).
+    Compute the characteristic function of the Heston model E[exp(i * u * X_tau)]
+    where X_tau = log(S_tau/S_0) at u for time tau.
 
     Parameters
     ----------
@@ -127,8 +152,8 @@ def impvol_heston_charfunc(k, tau, params):
 
     Parameters
     ----------
-    k : float
-        Log strike
+    k : array_like
+        Log strike k = log(K/F)
     tau : float
         Time to maturity
     params : dict
@@ -143,6 +168,7 @@ def impvol_heston_charfunc(k, tau, params):
     float
         Black implied volatility
     """
+    k = np.atleast_1d(np.asarray(k))
     otm_price = lewis_formula_otm_price(
         lambda u, tau: phi_heston(u=u, tau=tau, params=params),
         k=k,
