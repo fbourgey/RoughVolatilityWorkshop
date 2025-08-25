@@ -1,8 +1,5 @@
 import numpy as np
 from scipy.integrate import quad, quad_vec
-from scipy.interpolate import PchipInterpolator
-from scipy.stats import norm
-import pandas as pd
 
 from scipy import optimize, stats
 
