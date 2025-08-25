@@ -12,8 +12,8 @@ Input: pandas.DataFrame with columns ['Bid', 'Ask', 'Texp', 'Strike', 'Fwd'].
 import numpy as np
 import pandas as pd
 from scipy.integrate import quad
-from scipy.stats import norm
 from scipy.interpolate import PchipInterpolator
+from scipy.stats import norm
 
 
 def var_swap_robust(ivol_data: pd.DataFrame, slices=None):

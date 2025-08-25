@@ -1,7 +1,6 @@
 import numpy as np
-from scipy.integrate import quad, quad_vec
-
 from scipy import optimize, stats
+from scipy.integrate import quad, quad_vec
 
 # Module-level constants
 IMPVOL_MIN = 1e-10

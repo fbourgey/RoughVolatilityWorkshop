@@ -8,9 +8,10 @@ path simulation.
 import numpy as np
 import scipy.special as sp
 from scipy import integrate
+
+import pade
 from heston import psi_minus, psi_plus
 from utils import black_impvol, gauss_legendre, lewis_formula_otm_price
-import pade
 
 
 def phi_rheston_rational(u, tau, params, xi_curve, n_pade: int = 2, n_quad: int = 30):

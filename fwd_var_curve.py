@@ -12,8 +12,8 @@ Functions:
 """
 
 import numpy as np
-from scipy.optimize import minimize
 from scipy.linalg import inv
+from scipy.optimize import minimize
 
 
 def _objective_w(expiries, w_in):

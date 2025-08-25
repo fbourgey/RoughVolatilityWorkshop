@@ -5,11 +5,13 @@ Compact implementation providing path simulation, VIX pricing and approximations
 and local/implied volatility estimators for the rough Bergomi model.
 """
 
-import numpy as np
-from scipy import optimize, special, stats, integrate
-from tqdm import tqdm
-import utils
 from collections.abc import Callable
+
+import numpy as np
+from scipy import integrate, optimize, special, stats
+from tqdm import tqdm
+
+import utils
 
 
 class RoughBergomi:
@@ -734,15 +736,14 @@ class RoughBergomi:
         sigma_0 = self.xi0_0**0.5
         for i, y_i in enumerate(y):
             a_guess = np.zeros(N)
-            a_guess[0] = (
-                y_i * self.rho / sigma_0
-                + y_i** 2
-                / 2
-                * self.eta
-                / sigma_0** 2
-                * np.sqrt(2 * self.H)
-                / (self.H + 0.5)
-                * ((self.rho**2 + 1) * 0.65 - 3.0 * self.rho**2 / (self.H + 1.5))
+            a_guess[
+                0
+            ] = y_i * self.rho / sigma_0 + y_i**2 / 2 * self.eta / sigma_0**2 * np.sqrt(
+                2 * self.H
+            ) / (
+                self.H + 0.5
+            ) * (
+                (self.rho**2 + 1) * 0.65 - 3.0 * self.rho**2 / (self.H + 1.5)
             )
             optim = optimize.minimize(
                 lambda a, y_i=y_i: self.objective_function_rate_function(a=a, y=y_i),
@@ -1717,6 +1718,7 @@ class RoughBergomi:
 
                 def f_idx(y):
                     return payoff_mixed(meanp_1 + sigp_1 * x, y, lbd, eta_1, eta_2, mu0)
+
             else:
 
                 def f_idx(y):
