@@ -157,16 +157,12 @@ def impvol_heston_charfunc(k, tau, params):
     tau : float
         Time to maturity
     params : dict
-        Model parameters
-    xi : ndarray
-        Volatility curve values
-    n : int
-        Order of rational approximation
+        Model parameters containing lbd, rho, nu, vbar, v
 
     Returns
     -------
-    float
-        Black implied volatility
+    ndarray
+        Black implied volatility values
     """
     k = np.atleast_1d(np.asarray(k))
     otm_price = lewis_formula_otm_price(

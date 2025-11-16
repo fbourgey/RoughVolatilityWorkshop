@@ -67,13 +67,13 @@ Python translation of the R materials from [QuantMinds Rough Volatility Workshop
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/jgatheral/QuadraticRoughHeston.git
+   git clone https://github.com/fbourgey/RoughVolatilityWorkshop.git
    ```
 
 2. **Navigate to the project directory:**
 
    ```bash
-   cd QuadraticRoughHeston
+   cd RoughVolatilityWorkshop
    ```
 
 3. **Create a virtual environment:**
